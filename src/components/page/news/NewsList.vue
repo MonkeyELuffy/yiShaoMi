@@ -9,7 +9,7 @@
             <div class="container">
                 <el-button type="primary" icon="el-icon-plus" class="handle-del mr10" @click="addNews" style="margin-bottom: 20px;">新增新闻</el-button>
                 <el-table :data="data" border class="table" ref="multipleTable">
-                    <el-table-column prop="newsName" label="新闻名称">
+                    <el-table-column prop="title" label="新闻标题">
                     </el-table-column>
                     <el-table-column label="操作" width="280">
                         <template slot-scope="scope">
@@ -24,7 +24,7 @@
                         @current-change="handleCurrentChange"
                         layout="prev, pager, next"
                         :current-page.sync="curPage"
-                        :total="totalCount">
+                        :total="pageCount">
                     </el-pagination>
                 </div>
             </div>
@@ -48,7 +48,7 @@
         name: 'newsList',
         data() {
             return {
-                totalCount: 0,
+                pageCount: 0,
                 tableData: [],
                 curPage: 1,
                 pageSize: 10,
@@ -72,9 +72,9 @@
             getNewsList() {
                 request({ page: this.curPage, pageSize: this.pageSize }, urlList.getNewsList)
                     .then(res => {
-                        if (res.code === 200) {
-                            this.tableData = res.data.list
-                            this.totalCount = res.data.totalCount
+                        if (res.code === 0) {
+                            this.tableData = res.result.data
+                            this.pageCount = res.result.pageCount
                         } else {
                             console.log('获取新闻列表失败，请刷新页面')
                         }
@@ -84,17 +84,17 @@
                 this.$router.push({ path: '/newsdetail?-1'})
             },
             editNews(row) {
-                this.$router.push({ path: `/newsdetail?${row.id}`})
+                this.$router.push({ path: `/newsdetail?${row.newsId}`})
             },
             handleDelete(row) {
-                this.delId = row.id
+                this.delId = row.newsId
                 this.delVisible = true
             },
             // 确定删除
             deleteRow(){
-                request({ id: this.delId }, urlList.delNews)
+                request({ newsId: this.delId }, urlList.delNews)
                     .then(res => {
-                        if (res.code === 200) {
+                        if (res.code === 0) {
                             this.$message({
                                 duration: 600,
                                 message: '删除成功!',

@@ -1,7 +1,7 @@
 <template>
     <div class="login-wrap">
         <div class="ms-login">
-            <div class="ms-title">后台管理系统</div>
+            <div class="ms-title">一勺米 后台管理系统</div>
             <el-form :model="loginForm" :rules="rules" ref="loginForm" label-width="0px" class="ms-content">
                 <el-form-item prop="username">
                     <el-input v-model="loginForm.username" placeholder="username">
@@ -47,8 +47,8 @@
                     if (valid) {
                         request( this.loginForm, urlList.login+'?username='+this.loginForm.username)
                             .then(res => {
-                                if (res.code === 200) {
-                                    this.setCookie('fangjian_token', res.data.token)
+                                if (res.code === 0) {
+                                    this.setCookie('fangjian_token', res.result.token)
                                     localStorage.setItem('fangjian_username',this.loginForm.username);
                                     this.$router.push('/');
                                 } else {

@@ -8,11 +8,19 @@ const service = axios.create({
 })
 
 service.interceptors.request.use( config => {
+    const { upFileQuery } = config
+    const { needChangeUrl, headers, url } = upFileQuery
+    if (needChangeUrl) {
+        // md5校验和文件上传接口的baseUrl不一样，url由页面中传递而来
+        config.url = url
+        config.headers['timestamp'] = headers.timestamp
+        config.headers['sign'] = headers.sign
+    }
     const token = getCookie('fangjian_token')
     if (token && token !== undefined) {
-        // config.headers['Authorization'] = 'Bearer ' + token
+        config.headers['token'] = token
     }
-    config.headers['Content-Type'] = 'text/plain' // yapi使用关键，跨域; easy-moke不需要
+    // config.headers['Content-Type'] = 'text/plain' // yapi使用关键，跨域; easy-moke不需要
     return config;
 }, error => {
     console.log(error);
@@ -21,12 +29,18 @@ service.interceptors.request.use( config => {
 
 service.interceptors.response.use(response => {
     if(response.status === 200){
+        if (response.data.code === 4) { // token失效
+            window.alert('登录超时，请重新登录')
+            router.push({ path: '/login'})
+            return
+        }
         return response.data;
     }else{
         Promise.reject();
     }
 }, error => {
     console.log(error);
+    // window.alert('登录失败，请重新登录')
     // 接口错误时，如果进入的页面需要权限，则直接返回登录页面
     if (router.history.current.meta.permission) {
         router.push({ path: '/login'})
