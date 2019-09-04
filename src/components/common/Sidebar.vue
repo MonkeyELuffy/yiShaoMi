@@ -49,7 +49,7 @@
                         title: '新闻管理'
                     },
                     {
-                        icon: 'el-icon-star-on',
+                        icon: 'el-icon-star',
                         index: 'about',
                         title: '活动介绍'
                     },

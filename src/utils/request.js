@@ -16,7 +16,7 @@ service.interceptors.request.use( config => {
         config.headers['timestamp'] = headers.timestamp
         config.headers['sign'] = headers.sign
     }
-    const token = getCookie('fangjian_token')
+    const token = localStorage.getItem('fangjian_token');
     if (token && token !== undefined) {
         config.headers['token'] = token
     }

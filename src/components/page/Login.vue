@@ -48,8 +48,9 @@
                         request( this.loginForm, urlList.login+'?username='+this.loginForm.username)
                             .then(res => {
                                 if (res.code === 0) {
-                                    this.setCookie('fangjian_token', res.result.token)
+                                    console.log('res.result.token',res.result.token)
                                     localStorage.setItem('fangjian_username',this.loginForm.username);
+                                    localStorage.setItem('fangjian_token',res.result.token);
                                     this.$router.push('/');
                                 } else {
                                     this.$message.error('账号密码错误，请重试')
@@ -61,7 +62,7 @@
                 });
             },
             setCookie(name,value){
-                document.cookie = name + "="+ escape(value)
+                document.cookie = name + "="+ escape(value) + ';path=/'
             }
         }
     }
