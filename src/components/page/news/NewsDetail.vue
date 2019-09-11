@@ -8,49 +8,25 @@
         <div class="container">
             <div class="form-box">
                 <el-form ref="form" :model="form" :rules="rules" label-width="120px">
+
                     <el-form-item label="封面图" prop="coverImageUrl">
-                        <el-upload
-                            class="cover-img-uploader"
-                            :show-file-list="false"
-                            :on-change="changeCoverImgSuccess"
-                            :auto-upload="false">
-                            <img v-if="form.coverImageUrl" :src="form.coverImageUrl" class="cover-img">
-                            <i v-else class="el-icon-plus cover-img-uploader-icon"></i>
-                        </el-upload>
+                        <img-uploader :imageUrl="form.coverImageUrl" @changeImg='changeCoverImg'></img-uploader>
                     </el-form-item>
+
                     <el-form-item label="缩略图" prop="littleImageUrl">
-                        <el-upload
-                            class="little-img-uploader"
-                            :show-file-list="false"
-                            :on-change="changeLittleImgSuccess"
-                            :auto-upload="false">
-                            <img v-if="form.littleImageUrl" :src="form.littleImageUrl" class="cover-img">
-                            <i v-else class="el-icon-plus cover-img-uploader-icon"></i>
-                        </el-upload>
+                        <img-uploader :imageUrl="form.littleImageUrl" @changeImg='changeLittleImg'></img-uploader>
                     </el-form-item>
+
                     <el-form-item label="新闻标题" prop="title">
                         <el-input v-model="form.title"></el-input>
                     </el-form-item>
+
                     <el-form-item label="副标题">
                         <el-input v-model="form.subhead"></el-input>
                     </el-form-item>
 
                     <el-form-item label="新闻内容">
-                        <div class="des-container">
-                            <el-upload
-                            v-show="false"
-                            class="content-img-uploader"
-                            :show-file-list="false"
-                            :on-change="changeContentImgSuccess"
-                            :auto-upload="false">
-                            </el-upload>
-                            <quill-editor
-                                ref="quillEditor"
-                                v-model="form.content"
-                                :options="editorOption"
-                                @change="onEditorChange">
-                            </quill-editor>
-                        </div>
+                        <quill-editor-content :content="form.content" @onEditorChange='onEditorChange'></quill-editor-content>
                     </el-form-item>
 
                     <el-form-item>
@@ -71,16 +47,13 @@
         </el-dialog>
     </div>
 </template>
-<script src="http://cdn.bootcss.com/blueimp-md5/1.1.0/js/md5.min.js"></script>
 <script>
-    import 'quill/dist/quill.core.css';
-    import 'quill/dist/quill.snow.css';
-    import 'quill/dist/quill.bubble.css';
-    import { quillEditor } from 'vue-quill-editor';
     import { request } from '../../../api/index';
     import { checkMD5, uploadImage } from '../../../utils/utils';
     import { urlList, baseFileURL } from '../../../api/requestUrl';
     import crypto from 'crypto';
+    import imgUploader from '../../common/imgUploader.vue';
+    import quillEditorContent from '../../common/quillEditorContent.vue';
     
     const defaultFormData = {
         coverImageUrl: '',
@@ -130,11 +103,13 @@
             next(vm => vm.loadPage())
         },
         components: {
-            quillEditor,
+            imgUploader,
+            quillEditorContent,
         },
         methods: {
             loadPage() {
                 this.pageType = '新增'
+                this.$refs['form'].resetFields()
                 const newsId = this.getNewsId()
                 if (newsId !== '-1') {
                     this.pageType = '编辑'
@@ -143,8 +118,8 @@
                     this.resetFormData()
                 }
             },
-            onEditorChange({ editor, html, text }) {
-                this.content = html
+            onEditorChange(html) {
+                this.form.content = html
             },
             getNewsId() {
                 const newsId = location.href.split('?')[1]
@@ -202,69 +177,13 @@
                 this.backVisible = false
                 this.$router.push({name: 'newslist'});
             },
-            changeCoverImgSuccess(file) {
-                this.changeImgSuccess(file, 'cover')
-            },
-            changeLittleImgSuccess(file) {
-                this.changeImgSuccess(file, 'little')
-            },
-            changeContentImgSuccess(file) {
-                this.changeImgSuccess(file, 'content')
-            },
-            changeImgSuccess(file, imgType) {
-                const isLt2M = file.size / 1024 / 1024 < 1
-                if (!isLt2M) {
-                    this.$message.error('上传图片大小不能超过 1MB!')
-                    return false
-                }
-
-                // 检查图片是否已存在于服务器
-                this.checkMD5(file.raw, imgType)
-            },
-            checkMD5(file, imgType) {
-                const that = this
-                const timestamp = Date.parse(new Date())/1000
-                let md5 = crypto.createHash("md5")
-                md5.update('key1=QINYUANMAO&timestamp=' + timestamp + '&key2=FILE_SERVER_2019')
-                const sign = md5.digest('hex').toUpperCase()
-                // 头部加签
-                const headers = {
-                    timestamp,
-                    sign,
-                }
-                checkMD5(file, headers).then(response => {
-                    const { res, md5 } = response
-                    if (res.code === 1) {
-                        // 服务器不存在图片，再调用图片上传接口
-                        uploadImage(file, headers, md5).then(res => {
-                            that.uploadImgSuccess(res.result.fileUrl, imgType)
-                        })
-                    } else {
-                        // 服务器已存在图片，则直接返回图片地址
-                        that.uploadImgSuccess(res.result.fileUrl, imgType)
-                    }
-                })
-            },
-            uploadImgSuccess(fileUrl, imgType) {
-                switch (imgType) {
-                    case "cover": 
-                        this.uploadCoverImgSuccess(fileUrl)
-                        return
-                    case "little": 
-                        this.uploadLittleImgSuccess(fileUrl)
-                        return
-                    case "content": 
-                        this.uploadContentImgSuccess(fileUrl)
-                        return
-                }
-            },
-            uploadCoverImgSuccess(fileUrl) {
+            changeCoverImg(fileUrl) {
                 this.form.coverImageUrl = fileUrl
             },
-            uploadLittleImgSuccess(fileUrl) {
+            changeLittleImg(fileUrl) {
                 this.form.littleImageUrl = fileUrl
             },
-            uploadContentImgSuccess(fileUrl) {
+            changContentImg(fileUrl) {
                 let quill = this.$refs.quillEditor.quill;
                 // 获取光标所在位置
                 let length = quill.getSelection().index;
@@ -276,39 +195,3 @@
         }
     }
 </script>
-
-<style>
-  .little-img-uploader .el-upload {
-    width: 180px;
-    border: 1px dashed #d9d9d9;
-    border-radius: 6px;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-  }
-  .cover-img-uploader .el-upload {
-    border: 1px dashed #d9d9d9;
-    border-radius: 6px;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-  }
-  .cover-img-uploader .el-upload:hover {
-    border-color: #409EFF;
-  }
-  .cover-img-uploader-icon {
-    font-size: 28px;
-    color: #8c939d;
-    width: 178px;
-    height: 178px;
-    line-height: 178px;
-    text-align: center;
-  }
-  .cover-img {
-    height: 240px;
-    display: block;
-  }
-  .des-container {
-      width: 100%;
-  }
-</style>

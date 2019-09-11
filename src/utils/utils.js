@@ -1,6 +1,7 @@
 
 import { urlList, baseFileURL } from '../api/requestUrl';
 import { request } from '../api/index';
+import crypto from 'crypto';
 import sMD5 from './spark-md5'; // SparkMD5
 
 export const dataURLtoBlob = imgurl => {
@@ -15,7 +16,7 @@ export const dataURLtoBlob = imgurl => {
     return new Blob([u8arr], {type: mime}) // 值，类型
 }
 
-export const checkMD5 = (file, headers) => {
+export const checkMD5 = file => {
     return new Promise((resolve, reject) => {
         let blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice,
             chunkSize = 8097152, // Read in chunks of 2MB
@@ -33,6 +34,7 @@ export const checkMD5 = (file, headers) => {
                 let md5 = spark.end()
                 let formData = new FormData()
                 formData.append("md5", md5)
+                const headers = getHeaders()
                 const upFileQuery = {
                     headers,
                     needChangeUrl: true,
@@ -55,7 +57,7 @@ export const checkMD5 = (file, headers) => {
     })
 }
 
-export const uploadImage = (file, headers, md5) => {
+export const uploadImage = (file, md5) => {
     return new Promise((resolve, reject) => {
         let reader = new FileReader()
         reader.onload = e => {
@@ -64,6 +66,7 @@ export const uploadImage = (file, headers, md5) => {
             const blobBin = dataURLtoBlob(imgurl) // 二进制图片
             formData.append('file', blobBin)
             formData.append("md5", md5)
+            const headers = getHeaders()
             const upFileQuery = {
                 headers,
                 needChangeUrl: true,
@@ -75,4 +78,17 @@ export const uploadImage = (file, headers, md5) => {
         }
         reader.readAsDataURL(file)
     })
+}
+
+const getHeaders = () => {
+    const timestamp = Date.parse(new Date())/1000
+    let md5 = crypto.createHash("md5")
+    md5.update('key1=QINYUANMAO&timestamp=' + timestamp + '&key2=FILE_SERVER_2019')
+    const sign = md5.digest('hex').toUpperCase()
+    // 头部加签
+    const headers = {
+        timestamp,
+        sign,
+    }
+    return headers
 }
